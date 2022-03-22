@@ -1,0 +1,562 @@
+---
+title: "Isometric handgrip exercise speeds working memory responses in younger and older adults"
+author: "Bachman, S.L., Attanti, S., & Mather, M."
+date: "2022"
+output: 
+  html_document:
+    toc: true
+    theme: cosmo
+---
+
+
+```{r setup, include = FALSE}
+
+rm(list = ls())
+
+## packages to load
+packages <- c('here', 'data.table', 'dplyr', 'stringr', 'tidyr', 'rstatix', 
+              'afex', 'parameters', 'permuco', 'emmeans', 'effectsize',
+              'parameters', 'ggplot2', 'ggforce', 'ggpubr', 'tsibble', 'knitr', 
+              'kableExtra', 'cowplot', 'car')
+
+## load all (if not installed, install first)
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
+
+## two packages that must be installed manually (papaja)
+# (install devtools package if necessary)
+if(!"devtools" %in% rownames(installed.packages())) install.packages("devtools")
+if (!'papaja' %in% rownames(installed.packages())) devtools::install_github("crsh/papaja")
+library(devtools)
+library(papaja)
+
+# create figures directory if it doesn't exist
+if (!dir.exists(here('figures'))) {
+  dir.create(here('figures'))
+}
+
+```
+
+```{r analysis_preferences, include = FALSE}
+
+set.seed(23)
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      dpi = 400,
+                      cache.extra = knitr::rand_seed)
+
+# this controls whether analyses are happening external or internal to the Emotion & Cognition Lab
+# (potentially identifying columns in participants.tsv are removed from 
+# the publicly shared version, so when internal is 0, 
+# steps in several scripts are adjusted)
+internal <- 0
+
+```
+
+## Setup
+
+```{r run_0}
+
+# sets parameters and defines functions
+source(here('scripts', '4_analysis', '00_setup.R'))
+
+```
+
+```{r run_1}
+
+# loads all data
+
+# NOTE: in order for this script to run, you need to replace relevant filenames
+# in this script with the correct names from your own runs of the preprocessing scripts
+# this should entail updating the dates at the end of the filenames
+source(here('scripts', '4_analysis', '01_load-data.R'))
+
+```
+
+## Methods
+
+### Participants
+
+```{r run_2}
+
+# performs exclusions
+source(here('scripts', '4_analysis', '02_exclusions.R'))
+
+```
+
+```{r run_3}
+
+# summarizes sample characteristics
+source(here('scripts', '4_analysis', '03_participants.R'))
+
+```
+
+```{r run_4}
+
+# analyze EMG data during handgrip protocol
+# (includes identifying handgrip participants that did not have higher mean EMG during squeeze vs. rest)
+source(here('scripts', '4_analysis', '04_analyze-handgrip-EMG.R'))
+
+```
+
+Total participants:
+
+- `r data_subjects_all %>% filter(age_group == 'YA') %>% nrow()` younger 
+- `r data_subjects_all %>% filter(age_group == 'OA') %>% nrow()` older 
+
+Excluded for not having greater mean EMG during squeeze relative to rest: `r length(subs_exclude_EMG)` participant(s)
+
+Final sample for analysis: `r data_subjects %>% nrow()` participants
+
+```{r table1}
+
+kable(table1,
+      caption = 'Table 1. Sample characteristics') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+### Analysis
+
+#### Physiological data processing and analysis
+
+Prior to preprocessing and analysis, physiological signals for each participant were split into 7 segments corresponding to the various tasks: baseline, handgrip runs 1-3, and n-back runs 1-3.
+
+**ECG**
+- `r data_subjects %>% filter(has_ECG == 0) %>% nrow()` participants missing data due to recording errors
+- `r sum(data_qc_ECG$qc_rating_ecg == 0)` segments (`r printnum(sum(data_qc_ECG$qc_rating_ecg == 0)/nrow(data_qc_ECG), digits = 2)`%) with noise or artifact such that QRS complexes were not detectable by either researcher were excluded from further analysis; detailed breakdown in Table S1 below.
+
+```{r tableS1}
+
+kable(summary_qc_ECG,
+      caption = 'Table S1. Summary of ECG data segments included based on visual inspection.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+- `r summary_physionet_notanalyzed %>% nrow()` additional ECG segments were excluded from analysis because they contained too little high-quality data for QRS detection. 
+
+**Eyetracking**. 
+- `r data_subjects %>% filter(has_eyetracking == 0) %>% nrow()` participants missing eyetracking data
+
+## Results
+
+```{r run_5}
+
+# summarize pupil diameter data missingness across various tasks
+source(here('scripts', '4_analysis', '05_summarize-pupil-missingness.R'))
+
+```
+
+### Handgrip increased concurrent physiological arousal
+
+```{r run_6789}
+
+# analyze pupil diameter data during handgrip protocol
+source(here('scripts', '4_analysis', '06_analyze-handgrip-pupil.R'))
+
+# analyze heart rate data during handgrip protocol
+source(here('scripts', '4_analysis', '07_analyze-handgrip-HR.R'))
+
+# analyze sympathetic tone data during handgrip protocol
+source(here('scripts', '4_analysis', '08_analyze-handgrip-aSKNA.R'))
+
+```
+
+#### Figure 2
+
+```{r figure2}
+
+knitr::include_graphics(here('figures', 'figure2_handgrip-arousal.png'))
+
+```
+
+#### Table 2
+
+```{r table2}
+
+table2 <- as.data.frame(rbind(
+  format_aov_ez(aov.hg_pupil),
+  format_aov_ez(aov.hg_HR),
+  format_aov_ez(aov.hg_aSKNA)
+))
+
+kable(table2,
+      digits = c(NA, NA, 2, 3, NA),
+      caption = 'Table 2. Results of mixed-design ANOVAs testing the effects of group, age group, and phase on pupil diameter (A), heart rate (B), and sympathetic tone (C) during the handgrip protocol.') %>%
+  kable_styling(full_width = FALSE) %>%
+  pack_rows(start_row = 1, end_row = 7, group_label = 'A. Pupil diameter') %>%
+  pack_rows(start_row = 8, end_row = 14, group_label = 'B. Heart rate') %>%
+  pack_rows(start_row = 15, end_row = 21, group_label = 'C. Sympathetic tone')
+
+```
+
+#### Pairwise comparisons
+
+```{r contrasts.hg_pupil}
+
+# planned pairwise comparisons, pupil diameter
+kable(contrasts.hg_pupil,
+      digits = c(NA, NA, NA, 3, 3, 0, 3, NA),
+      caption = 'Table S4. Planned pairwise comparisons of pupil diameter during the handgrip protocol.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+```{r contrasts.hg_HR}
+
+# planned pairwise comparisons, heart rate
+kable(contrasts.hg_HR,
+      digits = c(NA, NA, NA, 3, 3, 0, 3, NA),
+      caption = 'Table S5. Planned pairwise comparisons of heart rate during the handgrip protocol.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+```{r contrasts.hg_aSKNA}
+
+# planned pairwise comparisons, heart rate
+kable(contrasts.hg_aSKNA,
+      digits = c(NA, NA, NA, 3, 3, 0, 3, NA),
+      caption = 'Table S6. Planned pairwise comparisons of aSKNA during the handgrip protocol.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+#### Figure S1
+
+```{r figureS1}
+
+knitr::include_graphics(here('figures', 'figureS1_handgrip-EMG.png'))
+
+```
+
+#### Associations between arousal during handgrip and EMG during handgrip
+
+```{r run_9}
+
+# analyze assocations between EMG and arousal measures during handgrip protocol
+source(here('scripts', '4_analysis', '09_analyze-handgrip-EMG-arousal.R'))
+
+```
+
+```{r cor.EMG_results}
+
+kable(cor.EMG_results %>%
+        mutate(p = fix_pval_table(p)),
+      digits = 3,
+      caption = 'Results of Pearson correlation analyses between arousal changes during handgrip and handgrip strength.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+### Handgrip speeded n-back reaction times but did not affect accuracy
+
+```{r run_1011}
+
+# analyze n-back accuracy
+source(here('scripts', '4_analysis', '10_analyze-nback-accuracy.R'))
+
+# analyze n-back reaction times
+source(here('scripts', '4_analysis', '11_analyze-nback-RT.R'))
+
+```
+
+- `r data_subjects %>% filter(exclude_nback == 1) %>% nrow()` older participant was excluded from all analyses of n-back task performance and arousal for not making any correct responses on the n-back task
+
+- Aggregated n-back accuracy values deviated from normality:
+
+```{r normcheck_acc}
+
+sw.nb_acc
+
+```
+
+- Aggregated n-back RT values deviated from normality: 
+
+```{r normcheck_RT}
+
+sw.nb_RT
+
+```
+
+#### Figure 3
+
+```{r figure3}
+
+knitr::include_graphics(here('figures', 'figure3_nback-acc-RT.png'))
+
+```
+
+#### Table 3
+
+```{r table3}
+
+table3 <- as.data.frame(rbind(
+  format_aovperm(aov.nb_acc_YA) %>%
+    mutate(`Age group` = 'Younger', .before = Effect),
+  format_aovperm(aov.nb_acc_OA) %>%
+    mutate(`Age group` = 'Older', .before = Effect),
+  format_aovperm(aov.nb_RT_YA) %>%
+    mutate(`Age group` = 'Younger', .before = Effect),
+  format_aovperm(aov.nb_RT_OA) %>%
+    mutate(`Age group` = 'Older', .before = Effect)
+))
+
+kable(table3,
+      digits = c(NA, NA, NA, NA, 3, NA, NA),
+      caption = 'Table 3. Results of permuted, mixed-design ANOVAs testing the effects of group and working memory load on n-back accuracy (A) and reaction times (B) for younger and older participants.') %>%
+  kable_styling(full_width = FALSE) %>%
+  pack_rows(start_row = 1, end_row = 6, group_label = 'A. Accuracy') %>%
+  pack_rows(start_row = 7, end_row = 12, group_label = 'B. Reaction times')
+
+```
+
+#### Pairwise comparisons
+
+```{r contrasts.nb_acc}
+
+kable(contrasts.nb_acc,
+      digits = c(NA, NA, NA, 3, NA, 3, 3),
+      caption = 'Table S7. Results of planned pairwise comparisons of n-back accuracy.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+```{r contrasts.nb_RT}
+
+kable(contrasts.nb_RT,
+      digits = c(NA, NA, NA, 3, NA, 3, 3),
+      caption = 'Table S8. Results of planned pairwise comparisons of n-back reaction times.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+### Handgrip did not affect subsequent salivary alpha amylase or cortisol levels
+
+```{r run_1213}
+
+# analyze salivary alpha amylase
+source(here('scripts', '4_analysis', '12_analyze-sAA.R'))
+
+# analyze salivary cortisol
+source(here('scripts', '4_analysis', '13_analyze-sC.R'))
+
+```
+
+- Salivary alpha amylase values deviated from normality:
+
+```{r normcheck_sAA}
+
+sw.sC
+
+```
+
+- Salivary cortisol values deviated from normality:
+
+```{r normcheck_sC}
+
+sw.sAA
+
+```
+
+#### Figure 4
+
+```{r figure4}
+
+knitr::include_graphics(here('figures', 'figure4_handgrip-saliva.png'))
+
+```
+
+#### Table 4 
+
+```{r table4}
+
+table4 <- as.data.frame(rbind(
+  format_aovperm(aov.hg_sAA),
+  format_aovperm(aov.hg_sC)
+))
+
+kable(table4,
+      digits = c(NA, NA, NA, 3, NA, NA),
+      caption = 'Table 4. Results of permuted, mixed-design ANOVAs testing the effects of group, age group and timepoint on salivary alpha amylase (A) and cortisol (B) levels.') %>%
+  kable_styling(full_width = FALSE) %>%
+  pack_rows(start_row = 1, end_row = 7, group_label = 'A. Salivary alpha amylase') %>%
+  pack_rows(start_row = 8, end_row = 14, group_label = 'B. Salivary cortisol')
+
+```
+
+#### Pairwise comparisons
+
+```{r contrasts.hg_sAA}
+
+kable(contrasts.hg_sAA,
+      digits = c(NA, NA, NA, 3, NA, 3, 3),
+      caption = 'Table S9. Results of planned pairwise comparisons of salivary alpha amylase levels.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+```{r contrasts.hg_sC}
+
+kable(contrasts.hg_sC,
+      digits = c(NA, NA, NA, 3, NA, 3, 3),
+      caption = 'Table S10. Results of planned pairwise comparisons of salivary cortisol levels.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+### Handgrip had time-dependent effects on subsequent tonic pupil diameter but did not affect subsequent heart rate or sympathetic tone
+
+```{r run_141516}
+
+# analyze tonic fixation pupil diameter during n-back
+source(here('scripts', '4_analysis', '14_analyze-nback-pupil-fixations.R'))
+
+# analyze heart rate during n-back
+source(here('scripts', '4_analysis', '15_analyze-nback-HR.R'))
+
+# analyze sympathetic tone during n-back
+source(here('scripts', '4_analysis', '16_analyze-nback-aSKNA.R'))
+
+```
+
+#### Figure 5
+
+```{r figure5}
+
+knitr::include_graphics(here('figures', 'figure5_nback-arousal.png'))
+
+```
+
+#### Table 5
+
+```{r table5}
+
+table5 <- as.data.frame(rbind(
+  format_aov_ez(aov.nb_pupil_fix_YA) %>% 
+    mutate('Age group' = 'Younger', .before = Effect),
+  format_aov_ez(aov.nb_pupil_fix_OA) %>%
+    mutate('Age group' = 'Older', .before = Effect),
+  format_aov_ez(aov.nb_HR_YA) %>% 
+    mutate('Age group' = 'Younger', .before = Effect),
+  format_aov_ez(aov.nb_HR_OA) %>%
+    mutate('Age group' = 'Older', .before = Effect),
+  format_aov_ez(aov.nb_aSKNA_YA) %>% 
+    mutate('Age group' = 'Younger', .before = Effect),
+  format_aov_ez(aov.nb_aSKNA_OA) %>%
+    mutate('Age group' = 'Older', .before = Effect)
+))
+
+kable(table5,
+      digits = c(NA, NA, NA, 2, 3, NA),
+      caption = 'Table 5. Results of mixed-design ANOVAs testing the effects of group and n-back block number relative to handgrip offset on pupil diameter during n-back fixation periods (A), heart rate during n-back task blocks (B), and sympathetic tone during n-back task blocks (C).') %>%
+  kable_styling(full_width = FALSE) %>%
+  pack_rows(start_row = 1, end_row = 6, group_label = 'A. Pupil diameter during n-back pre-block fixation periods') %>%
+  pack_rows(start_row = 7, end_row = 12, group_label = 'B. Heart rate during n-back blocks') %>%
+  pack_rows(start_row = 13, end_row = 18, group_label = 'C. Sympathetic tone during n-back blocks')
+
+```
+
+#### Pairwise comparisons
+
+```{r contrasts.nb_pupil_fix}
+
+kable(contrasts.nb_pupil_fix,
+      digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
+      caption = 'Table S11. Results of planned pairwise comparisons of fixation pupil diameter during the n-back task.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+```{r contrasts.nb_HR}
+
+kable(contrasts.nb_HR,
+      digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
+      caption = 'Table S12. Results of planned pairwise comparisons of heart rate during the n-back task.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+```{r contrasts.nb_aSKNA}
+
+kable(contrasts.nb_aSKNA,
+      digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
+      caption = 'Table S13. Results of planned pairwise comparisons of sympathetic tone during the n-back task.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+### Effects of handgrip on phasic pupillary responses depended on working memory load
+
+```{r run_171819}
+
+# analyze max pupil diameter during n-back trials
+source(here('scripts', '4_analysis', '17_analyze-nback-pupil-trials.R'))
+
+# analyze onset time of max pupil diameter during n-back trials
+source(here('scripts', '4_analysis', '18_analyze-nback-pupil-onsets.R'))
+
+# create figure of smoothed mean pupil diameter timeseries during n-back trials
+source(here('scripts', '4_analysis', '19_visualize-nback-pupil-timeseries.R'))
+
+```
+
+#### Figure 6
+
+```{r figure6}
+
+knitr::include_graphics(here('figures', 'figure6_nback-pupil.png'))
+
+```
+
+#### Table 6
+
+```{r table6}
+
+table6 <- as.data.frame(rbind(
+  format_aov_ez(aov.nb_pupil_trials_YA) %>% 
+    mutate('Age group' = 'Younger', .before = Effect),
+  format_aov_ez(aov.nb_pupil_trials_OA) %>%
+    mutate('Age group' = 'Older', .before = Effect),
+    format_aov_ez(aov.nb_pupil_onset_YA) %>% 
+    mutate('Age group' = 'Younger', .before = Effect),
+  format_aov_ez(aov.nb_pupil_onset_OA) %>%
+    mutate('Age group' = 'Older', .before = Effect)
+))
+
+kable(table6,
+      digits = c(NA, NA, NA, 2, 3, NA),
+      caption = 'Table 6. Results of mixed-design ANOVAs testing the effects of group and working memory load on maximum pupil diameter (A), and the onset time of maximum pupil diameter (B) during n-back trials.') %>%
+  kable_styling(full_width = FALSE) %>%
+  pack_rows(start_row = 1, end_row = 6, group_label = 'A. Maximum pupil diameter during n-back trials') %>%
+  pack_rows(start_row = 7, end_row = 12, group_label = 'B. Onset time of maximum pupil diameter during n-back trials')
+
+```
+
+#### Pairwise comparisons
+
+```{r contrasts.nb_pupil_trials}
+
+kable(contrasts.nb_pupil_trials,
+      digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
+      caption = 'Table S14. Results of planned pairwise comparisons of maximum pupil diameter on n-back trials.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+```{r contrasts.nb_pupil_onset}
+
+kable(contrasts.nb_pupil_onset,
+      digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
+      caption = 'Table S15. Results of planned pairwise comparisons of onset time of maximum pupil diameter on n-back trials.') %>%
+  kable_styling(full_width = FALSE)
+
+```
