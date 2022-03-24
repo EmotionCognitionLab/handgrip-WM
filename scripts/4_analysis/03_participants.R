@@ -17,8 +17,8 @@ if (internal == 1) {
               age_min = min(age),
               age_max = max(age),
               
-              n_female = sum(gender == 'female'),
-              pct_female = sum(gender == 'female')/N,
+              n_female = sum(sex == 'female'),
+              pct_female = sum(sex == 'female')/N,
               
               edu_mean = mean(edu),
               edu_sd = sd(edu),
@@ -58,8 +58,8 @@ if (internal == 0) {
     group_by(age_group, group) %>%
     summarize(N = n(),
               
-              n_female = sum(gender == 'female'),
-              pct_female = sum(gender == 'female')/N,
+              n_female = sum(sex == 'female'),
+              pct_female = sum(sex == 'female')/N,
               
               mmse_mean = mean(MMSE, na.rm = TRUE),
               mmse_sd = sd(MMSE, na.rm = TRUE),
