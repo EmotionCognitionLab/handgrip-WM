@@ -4,20 +4,34 @@
 
 
 # NOTE: in order for this script to run, you need to replace the filenames in
-# lines 43-69 with the correct names from your own runs of the preprocessing scripts
+# lines 57-83 with the correct names from your own runs of the preprocessing scripts
 # this should entail updating the dates at the end of the filenames
-# you ALSO need to update the directory name in line 39
+# you ALSO need to update the directory name in line 53
 
 
 # participant data --------------------------------------------------------
 
+# load data on sample characteristics and exclusions
 if (internal == 0) {
   data_subjects <- fread(here('data', 'rawdata', 'participants.tsv'),
                          na.strings = 'n/a')
 } else if (internal == 1) {
-  data_subjects <- fread(here('data', 'rawdata', 'participants_internal.tsv'), 
+  data_subjects <- fread(here('data', 'participants_internal.tsv'), 
                          na.strings = 'n/a')
 }
+
+# load MMSE data
+data_MMSE <- fread(here('data', 'rawdata', 'phenotype', 'MMSE.tsv'),
+                   na.strings = 'n/a')
+
+# load saliva data
+data_saliva <- fread(here('data', 'rawdata', 'phenotype', 'salivary_assays.tsv'),
+                     na.strings = 'n/a')
+
+# join MMSE and saliva data with participant data
+data_subjects <- data_subjects %>%
+  left_join(data_MMSE, by = 'label_subject') %>%
+  left_join(data_saliva, by = 'label_subject')
 
 
 # ECG manual QC data ------------------------------------------------------
