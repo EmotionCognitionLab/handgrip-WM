@@ -2,7 +2,7 @@
 
 Analysis and manuscript code for: Bachman, S.L., Attanti, S., Mather, M. (2022). [Isometric handgrip exercise speeds working memory responses in younger and older adults](https://doi.org/10.31234/osf.io/2bpn3).
 
-Data for this project are available on [Zenodo](LINK).
+Data for this project are available on [Open Science Framework](https://osf.io/m46q8/).
 
 For questions, contact [sbachman@usc.edu](mailto:sbachman@usc.edu).
 
@@ -31,7 +31,7 @@ For questions, contact [sbachman@usc.edu](mailto:sbachman@usc.edu).
 
 ### download data
 
-- download the dataset from Zenodo (link above)
+- download the dataset from Open Science Framework, using the "Download as zip" option to download all files in `rawdata/` as a zipped directory
 - unzip `rawdata.zip` so that `rawdata` is a subdirectory of `data`
 
 ### compile behavioral data
