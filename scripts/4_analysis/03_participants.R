@@ -50,6 +50,19 @@ if (internal == 1) {
            `Age, mean (SD)`, `Age, range`, `N (%) female`,
            `Edu, mean (SD)`, `Edu, range`, `MMSE, mean (SD)`, `MMSE, range`)
   
+  # for supplementary methods: 
+  # distribution of race as a function of age group
+  table_race_distribution <- data_subjects %>%
+    group_by(age_group, race) %>%
+    summarize(n = n()) %>%
+    group_by(age_group) %>%
+    mutate(pct = (n/sum(n))*100) %>%
+    mutate(`N (%)` = str_c(n, ' (', round(pct, digits = 1), '%)', sep = '')) %>%
+    mutate(age_group = ifelse(age_group == 'YA', 'Younger',
+                              ifelse(age_group == 'OA', 'Older', NA))) %>%
+    select(`Age group` = age_group, Race = race, `N (%)`) %>%
+    arrange(desc(`Age group`))
+  
 }
 
 if (internal == 0) {
