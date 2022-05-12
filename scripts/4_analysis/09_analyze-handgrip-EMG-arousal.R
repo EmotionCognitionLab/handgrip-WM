@@ -66,7 +66,8 @@ summary_hg_arousal <- as.data.frame(
     by = 'label_subject'
   )
 ) %>%
-  select(label_subject, group, age_group, pupil_diff:EMG_diff)
+  select(label_subject, group, age_group, pupil_diff:EMG_diff) %>%
+  filter(group == 'handgrip')
 summary_hg_arousal[summary_hg_arousal == 'NaN'] <- NA
 
 
