@@ -17,7 +17,7 @@ rm(list = ls())
 packages <- c('here', 'data.table', 'dplyr', 'stringr', 'tidyr', 'rstatix', 
               'afex', 'parameters', 'permuco', 'emmeans', 'effectsize',
               'parameters', 'ggplot2', 'ggforce', 'ggpubr', 'tsibble', 'knitr', 
-              'kableExtra', 'cowplot', 'car')
+              'kableExtra', 'cowplot', 'car', 'rmcorr')
 
 ## load all (if not installed, install first)
 package.check <- lapply(
