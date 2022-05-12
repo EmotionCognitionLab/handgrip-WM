@@ -82,7 +82,7 @@ summary_hg_arousal$group <- factor(summary_hg_arousal$group, levels = c('Handgri
 fig_handgrip_EMG_pupil <- ggplot(data = summary_hg_arousal,
                                  aes(x = EMG_diff, y = pupil_diff)) +
   geom_point(aes(colour = group), alpha = 0.5) +
-  stat_cor(method = 'pearson', 
+  stat_cor(method = 'pearson', label.y = 1.5,
            cor.coef.name = 'r',
            p.accuracy = 0.001, r.accuracy = 0.001) +
   stat_smooth(colour = 'darkgray', method = 'lm', se = TRUE) +
@@ -95,7 +95,7 @@ fig_handgrip_EMG_pupil <- ggplot(data = summary_hg_arousal,
 fig_handgrip_EMG_HR <- ggplot(data = summary_hg_arousal,
                               aes(x = EMG_diff, y = HR_diff)) +
   geom_point(aes(colour = group), alpha = 0.5) +
-  stat_cor(method = 'pearson', 
+  stat_cor(method = 'pearson', label.y = 14,
            cor.coef.name = 'r',
            p.accuracy = 0.001, r.accuracy = 0.001) +
   stat_smooth(colour = 'darkgray', method = 'lm', se = TRUE) +
@@ -147,6 +147,11 @@ figure2 <- ggarrange(figure2A,
                      nrow = 1, ncol = 2,
                      widths = c(1.3, 1))
 
+ggsave(here('figures', 'figure2b_handgrip-arousal_hg-only.png'), 
+       figure2B,
+       device = 'png', dpi = fig_dpi, bg = 'white',
+       width = 5, height = 11)
+
 # extract legend
 legend <- cowplot::get_legend(fig_handgrip_pupil)
 
@@ -177,6 +182,7 @@ cor.EMG_results <- data.frame(measure = c('pupil', 'HR', 'aSKNA'),
            df = c(cor.EMG_pupil$parameter, cor.EMG_HR$parameter, cor.EMG_aSKNA$parameter),
            p = c(cor.EMG_pupil$p.value, cor.EMG_HR$p.value, cor.EMG_aSKNA$p.value)
 )
+
 
 
 
