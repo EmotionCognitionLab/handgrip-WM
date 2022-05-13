@@ -387,7 +387,7 @@ fig_handgrip_EMG_aSKNA_rmcorr <- ggplot(data = data_rmcorr,
   theme_pubr() + theme_font_pub
 
 # arrange all plots into composite figure
-figureSX_rmcorr <- ggarrange(fig_handgrip_EMG_pupil_rmcorr,
+figureS2_rmcorr <- ggarrange(fig_handgrip_EMG_pupil_rmcorr,
                              fig_handgrip_EMG_HR_rmcorr,
                              fig_handgrip_EMG_aSKNA_rmcorr,
                              nrow = 3, ncol = 1,
@@ -397,11 +397,7 @@ figureSX_rmcorr <- ggarrange(fig_handgrip_EMG_pupil_rmcorr,
                              legend = 'none')
 
 # save figure
-ggsave(here('figures', 'figureSX_handgrip-arousal-rmcorr.png'), 
-       figureSX_rmcorr,
+ggsave(here('figures', 'figureS2_handgrip-arousal-rmcorr.png'), 
+       figureS2_rmcorr,
        device = 'png', dpi = fig_dpi, bg = 'white',
        width = 4, height = 11)
-
-
-
-
