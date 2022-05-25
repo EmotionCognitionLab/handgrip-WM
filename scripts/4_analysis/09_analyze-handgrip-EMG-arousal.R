@@ -84,7 +84,8 @@ fig_handgrip_EMG_pupil <- ggplot(data = summary_hg_arousal,
   geom_point(aes(colour = group), alpha = 0.5) +
   stat_cor(method = 'pearson', label.y = 1.5,
            cor.coef.name = 'r',
-           p.accuracy = 0.001, r.accuracy = 0.001) +
+           r.accuracy = 0.001,
+           p.digits = 2) +
   stat_smooth(colour = 'darkgray', method = 'lm', se = TRUE) +
   scale_colour_manual(values = cols_group) +
   labs(x = 'EMG signal, squeeze - rest',
@@ -97,7 +98,8 @@ fig_handgrip_EMG_HR <- ggplot(data = summary_hg_arousal,
   geom_point(aes(colour = group), alpha = 0.5) +
   stat_cor(method = 'pearson', label.y = 14,
            cor.coef.name = 'r',
-           p.accuracy = 0.001, r.accuracy = 0.001) +
+           r.accuracy = 0.001,
+           p.accuracy = 0.001) +
   stat_smooth(colour = 'darkgray', method = 'lm', se = TRUE) +
   scale_colour_manual(values = cols_group) +
   labs(x = 'EMG signal, squeeze - rest',
@@ -110,7 +112,8 @@ fig_handgrip_EMG_aSKNA <- ggplot(data = summary_hg_arousal,
   geom_point(aes(colour = group), alpha = 0.5) +
   stat_cor(method = 'pearson', 
            cor.coef.name = 'r',
-           p.accuracy = 0.001, r.accuracy = 0.001) +
+           r.accuracy = 0.001,
+           p.accuracy = 0.001) +
   stat_smooth(colour = 'darkgray', method = 'lm', se = TRUE) +
   scale_colour_manual(values = cols_group) +
   labs(x = 'EMG signal, squeeze - rest',
