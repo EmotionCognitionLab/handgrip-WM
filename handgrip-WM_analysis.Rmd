@@ -238,7 +238,7 @@ knitr::include_graphics(here('figures', 'figureS1_handgrip-EMG.png'))
 
 ```
 
-#### Associations between arousal during handgrip and EMG during handgrip
+#### Pearson correlation analyses between average handgrip effort and arousal changes during handgrip
 
 ```{r run_9}
 
@@ -254,6 +254,26 @@ kable(cor.EMG_results %>%
       digits = 3,
       caption = 'Results of Pearson correlation analyses between arousal changes during handgrip and handgrip strength.') %>%
   kable_styling(full_width = FALSE)
+
+```
+
+#### Repeated measures correlation analyses between handgrip effort and arousal changes during handgrip
+
+```{r rmcorr.EMG_results}
+
+kable(rmcorr.EMG_results %>%
+        mutate(p = fix_pval_table(p)),
+      digits = 3,
+      caption = 'Results of repeated measures correlation analyses between arousal changes during handgrip and handgrip strength.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+#### Figure S2
+
+```{r figureS2}
+
+knitr::include_graphics(here('figures', 'figureS2_handgrip-arousal-rmcorr.png'))
 
 ```
 
