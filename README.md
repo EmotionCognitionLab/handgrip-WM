@@ -62,5 +62,5 @@ For questions, contact [sbachman@usc.edu](mailto:sbachman@usc.edu).
 
 ### statistical analysis for manuscript
 
-- update the file `scripts/4-analysis/01_load-data.R` with correct names of results files you created in the steps above
+- update the file `scripts/4_analysis/01_load-data.R` with correct names of results files you created in the steps above
 - knit the document `handgrip-WM_analysis.Rmd` to html
