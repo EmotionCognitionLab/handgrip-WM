@@ -123,6 +123,16 @@ kable(table1,
 
 ```
 
+Racial distribution of participants included for analysis:
+
+```{r racial_distribution}
+
+kable(table_race_distribution,
+      caption = 'Racial distribution of sample') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
 ### Analysis
 
 #### Physiological data processing and analysis
@@ -133,10 +143,10 @@ Prior to preprocessing and analysis, physiological signals for each participant 
 - `r data_subjects %>% filter(has_ECG == 0) %>% nrow()` participants missing data due to recording errors
 - `r sum(data_qc_ECG$qc_rating_ecg == 0)` segments (`r printnum(sum(data_qc_ECG$qc_rating_ecg == 0)/nrow(data_qc_ECG), digits = 2)`%) with noise or artifact such that QRS complexes were not detectable by either researcher were excluded from further analysis; detailed breakdown in Table S1 below.
 
-```{r tableS1}
+```{r tableS2}
 
 kable(summary_qc_ECG,
-      caption = 'Table S1. Summary of ECG data segments included based on visual inspection.') %>%
+      caption = 'Table S2. Summary of ECG data segments included based on visual inspection.') %>%
   kable_styling(full_width = FALSE)
 
 ```
@@ -146,14 +156,39 @@ kable(summary_qc_ECG,
 **Eyetracking**. 
 - `r data_subjects %>% filter(has_eyetracking == 0) %>% nrow()` participants missing eyetracking data
 
-## Results
-
 ```{r run_5}
 
 # summarize pupil diameter data missingness across various tasks
 source(here('scripts', '4_analysis', '05_summarize-pupil-missingness.R'))
 
 ```
+
+```{r tableS3}
+
+kable(ET_missing_handgrip_summary,
+      caption = 'Table S3. Summary of events excluded from analysis, for eyetracking data segments from handgrip runs.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+```{r tableS4}
+
+kable(as.data.frame(
+  rbind(ET_missing_nbfix_summary,
+        ET_missing_nbtrials_summary)
+),
+      caption = 'Table S4. Summary of events excluded from analysis, for eyetracking data segments from n-back runs.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+## Results
+
+Baseline differences in arousal measures:
+
+- Pupil diameter: *t*(`r round(ttest_agegr_baseline_pupil$parameter, 2)`) = `r round(ttest_agegr_baseline_pupil$statistic, 2)`, *p* `r printp(ttest_agegr_baseline_pupil$p.value, add_equals = TRUE)`
+- Heart rate: *t*(`r round(ttest_agegr_baseline_HR$parameter, 2)`) = `r round(ttest_agegr_baseline_HR$statistic, 2)`, *p* `r printp(ttest_agegr_baseline_HR$p.value, add_equals = TRUE)`
+- Sympathetic tone: *t*(`r round(ttest_agegr_baseline_aSKNA$parameter, 2)`) = `r round(ttest_agegr_baseline_aSKNA$statistic, 2)`, *p* `r printp(ttest_agegr_baseline_aSKNA$p.value, add_equals = TRUE)`
 
 ### Handgrip increased concurrent physiological arousal
 
@@ -167,6 +202,17 @@ source(here('scripts', '4_analysis', '07_analyze-handgrip-HR.R'))
 
 # analyze sympathetic tone data during handgrip protocol
 source(here('scripts', '4_analysis', '08_analyze-handgrip-aSKNA.R'))
+
+```
+
+#### Test-retest reliability of arousal measures during handgrip
+
+```{r tableS5}
+
+kable(icc_hg_results,
+      digits = c(NA, NA, 3, NA, NA, NA),
+      caption = 'Table S5. Intraclass correlation coefficients reflecting test-retest reliability of mean pupil diameter, heart rate, and sympathetic tone values across runs of the handgrip task.')  %>%
+  kable_styling(full_width = FALSE)
 
 ```
 
@@ -205,7 +251,7 @@ kable(table2,
 # planned pairwise comparisons, pupil diameter
 kable(contrasts.hg_pupil,
       digits = c(NA, NA, NA, 3, 3, 0, 3, NA),
-      caption = 'Table S4. Planned pairwise comparisons of pupil diameter during the handgrip protocol.') %>%
+      caption = 'Table S6. Planned pairwise comparisons of pupil diameter during the handgrip protocol.') %>%
   kable_styling(full_width = FALSE)
 
 ```
@@ -215,7 +261,7 @@ kable(contrasts.hg_pupil,
 # planned pairwise comparisons, heart rate
 kable(contrasts.hg_HR,
       digits = c(NA, NA, NA, 3, 3, 0, 3, NA),
-      caption = 'Table S5. Planned pairwise comparisons of heart rate during the handgrip protocol.') %>%
+      caption = 'Table S7. Planned pairwise comparisons of heart rate during the handgrip protocol.') %>%
   kable_styling(full_width = FALSE)
 
 ```
@@ -225,7 +271,7 @@ kable(contrasts.hg_HR,
 # planned pairwise comparisons, heart rate
 kable(contrasts.hg_aSKNA,
       digits = c(NA, NA, NA, 3, 3, 0, 3, NA),
-      caption = 'Table S6. Planned pairwise comparisons of aSKNA during the handgrip protocol.') %>%
+      caption = 'Table S8. Planned pairwise comparisons of aSKNA during the handgrip protocol.') %>%
   kable_styling(full_width = FALSE)
 
 ```
@@ -277,15 +323,59 @@ knitr::include_graphics(here('figures', 'figureS2_handgrip-arousal-rmcorr.png'))
 
 ```
 
+### Handgrip had lateralized effects on pupil diameter
+
+```{r run_10}
+
+# analyze pupil diameter during handgrip, by laterality
+source(here('scripts', '4_analysis', '10_analyze-handgrip-pupil-laterality.R'))
+
+```
+
+#### Figure 3
+
+```{r figure3}
+
+knitr::include_graphics(here('figures', 'figure3_handgrip-laterality.png'))
+
+```
+
+#### Table 3
+
+```{r table3}
+
+table3 <- as.data.frame(
+  format_aov_ez(aov.hg_pupil_laterality)
+)
+
+kable(table3,
+      digits = c(NA, NA, 2, 3, NA),
+      caption = 'Table 3. Results of mixed-design ANOVA testing the effects of group, age group, and pupil laterality on mean pupil diameter during the handgrip protocol.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+#### Pairwise comparisons
+
+```{r contrasts.hg_laterality}
+
+kable(contrasts.hg_pupil_laterality,
+      digits = c(NA, NA, NA, 3, 3, 0, 3, NA),
+      caption = 'Table S9. Results of pairwise comparisons of mean diameter of pupil ipsilateral vs. contralateral to squeezing hand during handgrip protocol, by group and age group.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+
 ### Handgrip speeded n-back reaction times but did not affect accuracy
 
-```{r run_1011}
+```{r run_1112}
 
 # analyze n-back accuracy
-source(here('scripts', '4_analysis', '10_analyze-nback-accuracy.R'))
+source(here('scripts', '4_analysis', '11_analyze-nback-accuracy.R'))
 
 # analyze n-back reaction times
-source(here('scripts', '4_analysis', '11_analyze-nback-RT.R'))
+source(here('scripts', '4_analysis', '12_analyze-nback-RT.R'))
 
 ```
 
@@ -307,19 +397,30 @@ sw.nb_RT
 
 ```
 
-#### Figure 3
+#### Test-retest reliability of n-back accuracy and reaction times
 
-```{r figure3}
+```{r tableS10}
 
-knitr::include_graphics(here('figures', 'figure3_nback-acc-RT.png'))
+kable(icc_nb_beh_results,
+      digits = c(NA, NA, 3, NA, NA, NA),
+      caption = 'Table S10. Intraclass correlation coefficients reflecting test-retest reliability of ean accuracy and reaction times across runs of the n-back task') %>%
+  kable_styling(full_width = FALSE)
 
 ```
 
-#### Table 3
+#### Figure 4
+
+```{r figure3}
+
+knitr::include_graphics(here('figures', 'figure4_nback-acc-RT.png'))
+
+```
+
+#### Table 4
 
 ```{r table3}
 
-table3 <- as.data.frame(rbind(
+table4 <- as.data.frame(rbind(
   format_aovperm(aov.nb_acc_YA) %>%
     mutate(`Age group` = 'Younger', .before = Effect),
   format_aovperm(aov.nb_acc_OA) %>%
@@ -330,9 +431,9 @@ table3 <- as.data.frame(rbind(
     mutate(`Age group` = 'Older', .before = Effect)
 ))
 
-kable(table3,
+kable(table4,
       digits = c(NA, NA, NA, NA, 3, NA, NA),
-      caption = 'Table 3. Results of permuted, mixed-design ANOVAs testing the effects of group and working memory load on n-back accuracy (A) and reaction times (B) for younger and older participants.') %>%
+      caption = 'Table 4. Results of permuted, mixed-design ANOVAs testing the effects of group and working memory load on n-back accuracy (A) and reaction times (B) for younger and older participants.') %>%
   kable_styling(full_width = FALSE) %>%
   pack_rows(start_row = 1, end_row = 6, group_label = 'A. Accuracy') %>%
   pack_rows(start_row = 7, end_row = 12, group_label = 'B. Reaction times')
@@ -345,7 +446,7 @@ kable(table3,
 
 kable(contrasts.nb_acc,
       digits = c(NA, NA, NA, 3, NA, 3, 3),
-      caption = 'Table S7. Results of planned pairwise comparisons of n-back accuracy.') %>%
+      caption = 'Table S11. Results of planned pairwise comparisons of n-back accuracy.') %>%
   kable_styling(full_width = FALSE)
 
 ```
@@ -354,20 +455,31 @@ kable(contrasts.nb_acc,
 
 kable(contrasts.nb_RT,
       digits = c(NA, NA, NA, 3, NA, 3, 3),
-      caption = 'Table S8. Results of planned pairwise comparisons of n-back reaction times.') %>%
+      caption = 'Table S12. Results of planned pairwise comparisons of n-back reaction times.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+#### Testing the effect of adding education as a covariate
+
+```{r ancova_RT_edu}
+
+kable(table_compare_effect_edu,
+      digits = c(NA, NA, NA, NA, 3, NA, NA),
+      caption = 'Results of permuted, mixed-design ANCOVAs examining the effects of group, working memory load, and education on n-back reaction times.') %>%
   kable_styling(full_width = FALSE)
 
 ```
 
 ### Handgrip did not affect subsequent salivary alpha amylase or cortisol levels
 
-```{r run_1213}
+```{r run_1314}
 
 # analyze salivary alpha amylase
-source(here('scripts', '4_analysis', '12_analyze-sAA.R'))
+source(here('scripts', '4_analysis', '13_analyze-sAA.R'))
 
 # analyze salivary cortisol
-source(here('scripts', '4_analysis', '13_analyze-sC.R'))
+source(here('scripts', '4_analysis', '14_analyze-sC.R'))
 
 ```
 
@@ -387,26 +499,26 @@ sw.sAA
 
 ```
 
-#### Figure 4
+#### Figure 5
 
 ```{r figure4}
 
-knitr::include_graphics(here('figures', 'figure4_handgrip-saliva.png'))
+knitr::include_graphics(here('figures', 'figure5_handgrip-saliva.png'))
 
 ```
 
-#### Table 4 
+#### Table 5
 
 ```{r table4}
 
-table4 <- as.data.frame(rbind(
+table5 <- as.data.frame(rbind(
   format_aovperm(aov.hg_sAA),
   format_aovperm(aov.hg_sC)
 ))
 
-kable(table4,
+kable(table5,
       digits = c(NA, NA, NA, 3, NA, NA),
-      caption = 'Table 4. Results of permuted, mixed-design ANOVAs testing the effects of group, age group and timepoint on salivary alpha amylase (A) and cortisol (B) levels.') %>%
+      caption = 'Table 5. Results of permuted, mixed-design ANOVAs testing the effects of group, age group and timepoint on salivary alpha amylase (A) and cortisol (B) levels.') %>%
   kable_styling(full_width = FALSE) %>%
   pack_rows(start_row = 1, end_row = 7, group_label = 'A. Salivary alpha amylase') %>%
   pack_rows(start_row = 8, end_row = 14, group_label = 'B. Salivary cortisol')
@@ -419,7 +531,7 @@ kable(table4,
 
 kable(contrasts.hg_sAA,
       digits = c(NA, NA, NA, 3, NA, 3, 3),
-      caption = 'Table S9. Results of planned pairwise comparisons of salivary alpha amylase levels.') %>%
+      caption = 'Table S13. Results of planned pairwise comparisons of salivary alpha amylase levels.') %>%
   kable_styling(full_width = FALSE)
 
 ```
@@ -428,39 +540,50 @@ kable(contrasts.hg_sAA,
 
 kable(contrasts.hg_sC,
       digits = c(NA, NA, NA, 3, NA, 3, 3),
-      caption = 'Table S10. Results of planned pairwise comparisons of salivary cortisol levels.') %>%
+      caption = 'Table S14. Results of planned pairwise comparisons of salivary cortisol levels.') %>%
   kable_styling(full_width = FALSE)
 
 ```
 
-### Handgrip had time-dependent effects on subsequent tonic pupil diameter but did not affect subsequent heart rate or sympathetic tone
+### Handgrip did not affect subsequent tonic arousal
 
-```{r run_141516}
+```{r run_151617}
 
 # analyze tonic fixation pupil diameter during n-back
-source(here('scripts', '4_analysis', '14_analyze-nback-pupil-fixations.R'))
+source(here('scripts', '4_analysis', '15_analyze-nback-pupil-fixations.R'))
 
 # analyze heart rate during n-back
-source(here('scripts', '4_analysis', '15_analyze-nback-HR.R'))
+source(here('scripts', '4_analysis', '16_analyze-nback-HR.R'))
 
 # analyze sympathetic tone during n-back
-source(here('scripts', '4_analysis', '16_analyze-nback-aSKNA.R'))
+source(here('scripts', '4_analysis', '17_analyze-nback-aSKNA.R'))
 
 ```
 
-#### Figure 5
+#### Test-retest reliability of tonic arousal measures during n-back task
+
+```{r tableS15}
+
+kable(icc_nb_tonic_results,
+      digits = c(NA, 3, NA, NA, NA),
+      caption = 'Table S15. Intraclass correlation coefficients reflecting test-retest reliability of measures of tonic arousal across runs of the n-back task.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+#### Figure 6
 
 ```{r figure5}
 
-knitr::include_graphics(here('figures', 'figure5_nback-arousal.png'))
+knitr::include_graphics(here('figures', 'figure6_nback-arousal.png'))
 
 ```
 
-#### Table 5
+#### Table 6
 
 ```{r table5}
 
-table5 <- as.data.frame(rbind(
+table6 <- as.data.frame(rbind(
   format_aov_ez(aov.nb_pupil_fix_YA) %>% 
     mutate('Age group' = 'Younger', .before = Effect),
   format_aov_ez(aov.nb_pupil_fix_OA) %>%
@@ -475,9 +598,9 @@ table5 <- as.data.frame(rbind(
     mutate('Age group' = 'Older', .before = Effect)
 ))
 
-kable(table5,
+kable(table6,
       digits = c(NA, NA, NA, 2, 3, NA),
-      caption = 'Table 5. Results of mixed-design ANOVAs testing the effects of group and n-back block number relative to handgrip offset on pupil diameter during n-back fixation periods (A), heart rate during n-back task blocks (B), and sympathetic tone during n-back task blocks (C).') %>%
+      caption = 'Table 6. Results of mixed-design ANOVAs testing the effects of group and n-back block number relative to handgrip offset on pupil diameter during n-back fixation periods (A), heart rate during n-back task blocks (B), and sympathetic tone during n-back task blocks (C).') %>%
   kable_styling(full_width = FALSE) %>%
   pack_rows(start_row = 1, end_row = 6, group_label = 'A. Pupil diameter during n-back pre-block fixation periods') %>%
   pack_rows(start_row = 7, end_row = 12, group_label = 'B. Heart rate during n-back blocks') %>%
@@ -491,7 +614,7 @@ kable(table5,
 
 kable(contrasts.nb_pupil_fix,
       digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
-      caption = 'Table S11. Results of planned pairwise comparisons of fixation pupil diameter during the n-back task.') %>%
+      caption = 'Table S16. Results of planned pairwise comparisons of fixation pupil diameter during the n-back task.') %>%
   kable_styling(full_width = FALSE)
 
 ```
@@ -500,7 +623,7 @@ kable(contrasts.nb_pupil_fix,
 
 kable(contrasts.nb_HR,
       digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
-      caption = 'Table S12. Results of planned pairwise comparisons of heart rate during the n-back task.') %>%
+      caption = 'Table S17. Results of planned pairwise comparisons of heart rate during the n-back task.') %>%
   kable_styling(full_width = FALSE)
 
 ```
@@ -509,39 +632,39 @@ kable(contrasts.nb_HR,
 
 kable(contrasts.nb_aSKNA,
       digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
-      caption = 'Table S13. Results of planned pairwise comparisons of sympathetic tone during the n-back task.') %>%
+      caption = 'Table S18. Results of planned pairwise comparisons of sympathetic tone during the n-back task.') %>%
   kable_styling(full_width = FALSE)
 
 ```
 
-### Effects of handgrip on phasic pupillary responses depended on working memory load
+### Handgrip did not affect subsequent phasic pupillary responses
 
 ```{r run_171819}
 
 # analyze max pupil diameter during n-back trials
-source(here('scripts', '4_analysis', '17_analyze-nback-pupil-trials.R'))
+source(here('scripts', '4_analysis', '18_analyze-nback-pupil-trials.R'))
 
 # analyze onset time of max pupil diameter during n-back trials
-source(here('scripts', '4_analysis', '18_analyze-nback-pupil-onsets.R'))
+source(here('scripts', '4_analysis', '19_analyze-nback-pupil-onsets.R'))
 
 # create figure of smoothed mean pupil diameter timeseries during n-back trials
-source(here('scripts', '4_analysis', '19_visualize-nback-pupil-timeseries.R'))
+source(here('scripts', '4_analysis', '20_visualize-nback-pupil-timeseries.R'))
 
 ```
 
-#### Figure 6
+#### Figure 7
 
 ```{r figure6}
 
-knitr::include_graphics(here('figures', 'figure6_nback-pupil.png'))
+knitr::include_graphics(here('figures', 'figure7_nback-pupil.png'))
 
 ```
 
-#### Table 6
+#### Table 7
 
 ```{r table6}
 
-table6 <- as.data.frame(rbind(
+table7 <- as.data.frame(rbind(
   format_aov_ez(aov.nb_pupil_trials_YA) %>% 
     mutate('Age group' = 'Younger', .before = Effect),
   format_aov_ez(aov.nb_pupil_trials_OA) %>%
@@ -552,9 +675,9 @@ table6 <- as.data.frame(rbind(
     mutate('Age group' = 'Older', .before = Effect)
 ))
 
-kable(table6,
+kable(table7,
       digits = c(NA, NA, NA, 2, 3, NA),
-      caption = 'Table 6. Results of mixed-design ANOVAs testing the effects of group and working memory load on maximum pupil diameter (A), and the onset time of maximum pupil diameter (B) during n-back trials.') %>%
+      caption = 'Table 7. Results of mixed-design ANOVAs testing the effects of group and working memory load on maximum pupil diameter (A), and the onset time of maximum pupil diameter (B) during n-back trials.') %>%
   kable_styling(full_width = FALSE) %>%
   pack_rows(start_row = 1, end_row = 6, group_label = 'A. Maximum pupil diameter during n-back trials') %>%
   pack_rows(start_row = 7, end_row = 12, group_label = 'B. Onset time of maximum pupil diameter during n-back trials')
@@ -567,7 +690,7 @@ kable(table6,
 
 kable(contrasts.nb_pupil_trials,
       digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
-      caption = 'Table S14. Results of planned pairwise comparisons of maximum pupil diameter on n-back trials.') %>%
+      caption = 'Table S19. Results of planned pairwise comparisons of maximum pupil diameter on n-back trials.') %>%
   kable_styling(full_width = FALSE)
 
 ```
@@ -576,7 +699,18 @@ kable(contrasts.nb_pupil_trials,
 
 kable(contrasts.nb_pupil_onset,
       digits = c(NA, NA, NA, 3, 3, 0, 3, 3),
-      caption = 'Table S15. Results of planned pairwise comparisons of onset time of maximum pupil diameter on n-back trials.') %>%
+      caption = 'Table S20. Results of planned pairwise comparisons of onset time of maximum pupil diameter on n-back trials.') %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+#### Test-retest reliability of phasic pupillary measures across the n-back task
+
+```{r tableS21}
+
+kable(icc_nb_pupil_results,
+      digits = c(NA, NA, 3, NA, NA, NA),
+      caption = 'Table S21. Intraclass correlation coefficients reflecting test-retest reliability of phasic pupillary values across runs of the n-back task.') %>%
   kable_styling(full_width = FALSE)
 
 ```
