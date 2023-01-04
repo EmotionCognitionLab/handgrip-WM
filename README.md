@@ -4,7 +4,7 @@ Analysis and manuscript code for: Bachman, S.L., Attanti, S., Mather, M. (2022).
 
 Data for this project are available on [Open Science Framework](https://osf.io/m46q8/).
 
-For questions, contact [sbachman@usc.edu](mailto:sbachman@usc.edu).
+For questions, contact [sbachman@alumni.usc.edu](mailto:sbachman@alumni.usc.edu).
 
 ## contents
 
@@ -26,7 +26,7 @@ For questions, contact [sbachman@usc.edu](mailto:sbachman@usc.edu).
 ### prepare project directory
 
 - clone this directory
-- initialize an R project in the project directory
+- initialize an RStudio project in the project directory
 - create a subdirectory named `data` in the project directory
 
 ### download data
