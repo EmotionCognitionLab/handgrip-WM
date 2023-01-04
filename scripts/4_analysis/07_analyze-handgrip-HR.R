@@ -127,3 +127,68 @@ contrasts.hg_HR <- emm.hg_HR %>%
   # format p-values for table
   mutate(p = fix_pval_table(p)) %>%
   arrange(desc(`Age group`), desc(Group))
+
+
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+# (averaging first over rounds, to get single squeeze/rest estimate per run)
+icc_hg_HR <- summary_hg_HR %>%
+  group_by(label_subject, group, age_group, run, event) %>%
+  summarize(niHR_corr = mean(niHR_corr, na.rm = TRUE))
+icc_hg_HR[icc_hg_HR == 'NaN'] <- NA
+
+# split data into rest and squeeze
+# and reshape for ICC calculation
+icc_hg_HR_rest <- icc_hg_HR %>%
+  filter(event == 'rest') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'niHR_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+icc_hg_HR_squeeze <- icc_hg_HR %>%
+  filter(event == 'squeeze') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'niHR_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+# calculate ICCs: rest
+icc_hg_HR_rest_estimate <- irr::icc(icc_hg_HR_rest,
+                                       type = "agreement",
+                                       model = "twoway",
+                                       unit = "average")
+
+icc_hg_HR_squeeze_estimate <- irr::icc(icc_hg_HR_squeeze,
+                                          type = "agreement",
+                                          model = "twoway",
+                                          unit = "average")
+
+# arrange tables containing ICC estimates and F-test results
+icc_hg_HR_results <- as.data.frame(
+  cbind(c('Rest', 'Squeeze'),
+        rbind(extract_icc_results(icc_hg_HR_rest_estimate),
+              extract_icc_results(icc_hg_HR_squeeze_estimate))
+  ))
+names(icc_hg_HR_results) <- c('Event', 'ICC', '95% CI', 'F (df1, df2)', 'p')
+
+
+# analyze baseline differences in heart rate ------------------------------
+
+summary_agegr_baseline_HR <- data_HR_baseline %>%
+  
+  # average over hemispheres
+  group_by(label_subject) %>%
+  summarize(niHR_baseline = mean(mean_niHR, na.rm = TRUE)) %>%
+  
+  # bind subject info
+  left_join(data_subjects %>%
+              select(label_subject, age_group), 
+            by = 'label_subject')
+
+ttest_agegr_baseline_HR <- t.test(niHR_baseline ~ age_group, data = summary_agegr_baseline_HR)

@@ -93,7 +93,7 @@ figure3 <- ggarrange(
   common.legend = TRUE,
   legend = 'right'
 )
-ggsave(here('figures', 'figure3_nback-acc-RT.png'), 
+ggsave(here('figures', 'figure4_nback-acc-RT.png'), 
        figure3,
        device = 'png', dpi = fig_dpi, bg = 'white',
        width = 5, height = 8)
@@ -307,3 +307,133 @@ contrasts.nb_RT <- as.data.frame(
 rm(contrasts.nb_RT_YA, contrasts.nb_RT_OA,
    condition_group_results_YA, condition_group_results_OA,
    input_wide, input, fit_mixed)
+
+
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+icc_nb_RT <- data_nback %>%
+  
+  # exclude practice trials, include target trials only
+  filter(!run == 0,
+         target == 1) %>%
+  rowwise() %>%
+  group_by(label_subject, condition, run) %>%
+  
+  # compute mean accuracy for each participant, by condition
+  summarize(mean_RT_target = mean(response_time, na.rm = TRUE)) %>%
+  
+  # bind subject information
+  left_join(data_subjects %>% 
+              select(label_subject, group, age_group),
+            by = 'label_subject') %>%
+  select(label_subject, group, age_group, condition, run, mean_RT_target) %>%
+  rowwise() %>%
+  mutate(condition = str_c(condition, '-back', sep = ''))
+icc_nb_RT[icc_nb_RT == 'NaN'] <- NA
+
+# split by WM load
+# and reshape data for ICC calculation
+icc_nb_RT_0 <- icc_nb_RT %>%
+  filter(condition == '0-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'mean_RT_target') %>%
+  ungroup() %>%
+  select(run1, run2, run3)
+
+icc_nb_RT_1 <- icc_nb_RT %>%
+  filter(condition == '1-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'mean_RT_target') %>%
+  ungroup() %>%
+  select(run1, run2, run3)
+
+icc_nb_RT_2 <- icc_nb_RT %>%
+  filter(condition == '2-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'mean_RT_target') %>%
+  ungroup() %>%
+  select(run1, run2, run3)
+
+icc_nb_RT_3 <- icc_nb_RT %>%
+  filter(condition == '3-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'mean_RT_target') %>%
+  ungroup() %>%
+  select(run1, run2, run3)
+
+# calculate ICCs
+icc_nb_RT_0_estimate <- irr::icc(icc_nb_RT_0,
+                                  type = "agreement",
+                                  model = "twoway",
+                                  unit = "average")
+
+icc_nb_RT_1_estimate <- irr::icc(icc_nb_RT_1,
+                                  type = "agreement",
+                                  model = "twoway",
+                                  unit = "average")
+
+icc_nb_RT_2_estimate <- irr::icc(icc_nb_RT_2,
+                                  type = "agreement",
+                                  model = "twoway",
+                                  unit = "average")
+
+icc_nb_RT_3_estimate <- irr::icc(icc_nb_RT_3,
+                                  type = "agreement",
+                                  model = "twoway",
+                                  unit = "average")
+
+
+# arrange tables containing ICC estimates and F-test results
+icc_nb_RT_results <- as.data.frame(
+  cbind(c('0-back', '1-back', '2-back', '3-back'),
+        rbind(extract_icc_results(icc_nb_RT_0_estimate),
+              extract_icc_results(icc_nb_RT_1_estimate),
+              extract_icc_results(icc_nb_RT_2_estimate),
+              extract_icc_results(icc_nb_RT_3_estimate))
+  ))
+names(icc_nb_RT_results) <- c('Load', 'ICC', '95% CI', 'F (df1, df2)', 'p')
+
+# join all n-back behavioral ICC results
+icc_nb_beh_results <- as.data.frame(
+  rbind(icc_nb_acc_results,
+        icc_nb_RT_results)
+)
+icc_nb_beh_results$Measure <- c(rep('Mean accuracy', 4), rep('Mean reaction time', 4))
+icc_nb_beh_results <- icc_nb_beh_results %>%
+  select(Measure, Load, ICC, '95% CI', 'F (df1, df2)', 'p')
+
+
+# test that education does not differ for handgrip vs. control ------------
+
+#ttest_group_edu_YA <- wilcox.test(edu ~ group, 
+#                                  data_subjects %>% filter(age_group == 'YA'))
+
+#ttest_group_edu_OA <- wilcox.test(edu ~ group, 
+#                                  data_subjects %>% filter(age_group == 'OA'))
+
+
+# run ANCOVA with education included as covariate -------------------------
+
+# bind edu data to summary RT data
+summary_nb_RT_edu <- summary_nb_RT %>%
+  left_join(data_subjects %>%
+              select(label_subject, edu))
+
+# permuted ANOVAs for each age group
+aov.nb_RT_YA_edu <- permuco::aovperm(mean_RT_target ~ group * condition + edu + Error(label_subject/(condition)), 
+                                     data = summary_nb_RT_edu %>% filter(age_group == 'YA'), np = nperm_aov)
+aov.nb_RT_OA_edu <- permuco::aovperm(mean_RT_target ~ group * condition + edu + Error(label_subject/(condition)), 
+                                     data = summary_nb_RT_edu %>% filter(age_group == 'OA'), np = nperm_aov)
+
+table_compare_effect_edu <- as.data.frame(rbind(
+  format_aovperm(aov.nb_RT_YA_edu) %>%
+    mutate(`Age group` = 'Younger', .before = Effect),
+  format_aovperm(aov.nb_RT_OA_edu) %>%
+    mutate(`Age group` = 'Older', .before = Effect)
+)
+)

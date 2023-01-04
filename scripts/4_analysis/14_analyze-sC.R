@@ -186,7 +186,7 @@ figure4 <- ggarrange(
   legend = 'right'
 )
 
-ggsave(here('figures', 'figure4_handgrip-saliva.png'), 
+ggsave(here('figures', 'figure5_handgrip-saliva.png'), 
        figure4, 
        device = 'png', dpi = fig_dpi, bg = 'white',
        width = 5, height = 8)

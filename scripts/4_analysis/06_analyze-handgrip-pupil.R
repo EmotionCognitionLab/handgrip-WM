@@ -12,7 +12,8 @@ summary_hg_pupil <- data_ET_handgrip %>%
   rowwise() %>%
   
   # apply missingness threshold to squeeze/rest data
-  mutate(pupil_mean = ifelse(frac_missing > thresh, NA, pupil_mean)) %>%
+  #mutate(pupil_mean = ifelse(frac_missing > thresh, NA, pupil_mean)) %>%
+  mutate(pupil_mean = ifelse(frac_missing > thresh_handgrip, NA, pupil_mean)) %>%
   
   # join data for baseline correction
   left_join(pupil_norm_baseline, 
@@ -135,3 +136,84 @@ contrasts.hg_pupil <- emm.hg_pupil %>%
   # format p-values for table
   mutate(p = fix_pval_table(p)) %>%
   arrange(desc(`Age group`), desc(Group))
+
+
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+# (averaging first over rounds, to get single squeeze/rest estimate per run)
+icc_hg_pupil <- summary_hg_pupil %>%
+  group_by(label_subject, group, age_group, run, event) %>%
+  summarize(pupil_corr = mean(pupil_corr, na.rm = TRUE))
+icc_hg_pupil[icc_hg_pupil == 'NaN'] <- NA
+
+# split data into rest and squeeze
+# and reshape for ICC calculation
+icc_hg_pupil_rest <- icc_hg_pupil %>%
+  filter(event == 'rest') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+icc_hg_pupil_squeeze <- icc_hg_pupil %>%
+  filter(event == 'squeeze') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+# calculate ICCs: rest
+icc_hg_pupil_rest_estimate <- irr::icc(icc_hg_pupil_rest,
+                                        type = "agreement",
+                                        model = "twoway",
+                                        unit = "average")
+
+icc_hg_pupil_squeeze_estimate <- irr::icc(icc_hg_pupil_squeeze,
+                                       type = "agreement",
+                                       model = "twoway",
+                                       unit = "average")
+
+# function to extract ICC info
+extract_icc_results <- function(icc_output) {
+  ICC = round(icc_output$value, 3)
+  CI = paste(round(icc_output$lbound, 3), ' - ', round(icc_output$ubound, 3), sep = '')
+  Fval = paste('F(', icc_output$df1, 
+              ', ', 
+              round(icc_output$df2, 1), 
+              ') = ', 
+              round(icc_output$Fvalue, 2),
+              sep = '')
+  p = fix_pval_table(icc_output$p.value)
+  
+  return(c(ICC, CI, Fval, p))
+}
+
+# arrange tables containing ICC estimates and F-test results
+icc_hg_pupil_results <- as.data.frame(
+  cbind(c('Rest', 'Squeeze'),
+  rbind(extract_icc_results(icc_hg_pupil_rest_estimate),
+        extract_icc_results(icc_hg_pupil_squeeze_estimate))
+))
+names(icc_hg_pupil_results) <- c('Event', 'ICC', '95% CI', 'F (df1, df2)', 'p')
+
+
+
+# analyze baseline differences in pupil diameter --------------------------
+
+summary_agegr_baseline_pupil <- pupil_norm_baseline %>%
+  
+  # average over hemispheres
+  group_by(label_subject) %>%
+  summarize(pupil_baseline = mean(pupil_baseline, na.rm = TRUE)) %>%
+  
+  # bind subject info
+  left_join(data_subjects %>%
+              select(label_subject, age_group), 
+            by = 'label_subject')
+
+ttest_agegr_baseline_pupil <- t.test(pupil_baseline ~ age_group, data = summary_agegr_baseline_pupil)

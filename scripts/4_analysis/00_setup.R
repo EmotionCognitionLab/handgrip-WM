@@ -5,7 +5,11 @@
 
 # thresholds --------------------------------------------------------------
 
-thresh <- 0.7  # threshold for excluding individual pupil segments based on missingness
+#thresh <- 0.7  # threshold for excluding individual pupil segments based on missingness
+thresh_baseline <- 0.7
+thresh_handgrip <- 0.5
+thresh_nbfix <- 0.5
+thresh_nbtrials <- 0.5
 
 
 # parameters --------------------------------------------------------------
@@ -137,7 +141,13 @@ fix_effect_name <- function(eff_name) {
     eff_name_fixed == 'sample x age_group' ~ 'Timepoint x Age group',
     eff_name_fixed == 'sample x group x age_group' ~ 'Timepoint x Group x Age group',
     eff_name_fixed == 'block_recoded' ~ 'Block',
-    eff_name_fixed == 'group x block_recoded' ~ 'Group x Block'
+    eff_name_fixed == 'group x block_recoded' ~ 'Group x Block',
+    eff_name_fixed == 'laterality' ~ 'Laterality',
+    eff_name_fixed == 'group x laterality' ~ 'Group x Laterality',
+    eff_name_fixed == 'age_group x laterality' ~ 'Age group x Laterality',
+    eff_name_fixed == 'group x age_group x laterality' ~ 'Group x Age group x Laterality',
+    eff_name_fixed == 'edu' ~ 'Education'
+    
   )  
   return(eff_name_fixed)
 }

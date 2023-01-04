@@ -15,7 +15,7 @@ summary_nb_pupil_fixation <- data_ET_nback %>%
   filter(event == 'initial_fixation') %>%
   
   # apply missingness threshold to individual segments
-  mutate(pupil_mean = ifelse(frac_missing > thresh, NA, pupil_mean)) %>%
+  mutate(pupil_mean = ifelse(frac_missing > thresh_nbfix, NA, pupil_mean)) %>%
   
   # exclude participants with >thresh missingness as determined above
 #  filter(! label_subject %in% ET_missing_nbfix$label_subject) %>%
@@ -187,4 +187,34 @@ contrasts.nb_pupil_fix <-
   )
 
 
-  
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+icc_nb_pupil_fixation <- summary_nb_pupil_fixation %>%
+  group_by(label_subject, group, age_group, run) %>%
+  summarize(pupil_nbfix_corr = mean(pupil_nbfix_corr, na.rm = TRUE))
+icc_nb_pupil_fixation[icc_nb_pupil_fixation == 'NaN'] <- NA
+
+# split data into rest and squeeze
+# and reshape for ICC calculation
+icc_nb_pupil_fixation <- icc_nb_pupil_fixation %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_nbfix_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+# calculate ICCs
+icc_nb_pupil_fixation_estimate <- irr::icc(icc_nb_pupil_fixation,
+                                       type = "agreement",
+                                       model = "twoway",
+                                       unit = "average")
+
+
+# arrange tables containing ICC estimates and F-test results
+icc_nb_pupil_fixation_results <- as.data.frame(
+  cbind(c('Mean pupil diameter during n-back fixation periods'),
+        rbind(extract_icc_results(icc_nb_pupil_fixation_estimate))
+  ))
+names(icc_nb_pupil_fixation_results) <- c('Measure', 'ICC', '95% CI', 'F (df1, df2)', 'p')  

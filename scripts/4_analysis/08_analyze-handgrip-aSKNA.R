@@ -125,3 +125,81 @@ contrasts.hg_aSKNA <- emm.hg_aSKNA %>%
   # format p-values for table
   mutate(p = fix_pval_table(p)) %>%
   arrange(desc(`Age group`), desc(Group))
+
+
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+# (averaging first over rounds, to get single squeeze/rest estimate per run)
+icc_hg_aSKNA <- summary_hg_aSKNA %>%
+  group_by(label_subject, group, age_group, run, event) %>%
+  summarize(aSKNA_corr = mean(aSKNA_corr, na.rm = TRUE))
+icc_hg_aSKNA[icc_hg_aSKNA == 'NaN'] <- NA
+
+# split data into rest and squeeze
+# and reshape for ICC calculation
+icc_hg_aSKNA_rest <- icc_hg_aSKNA %>%
+  filter(event == 'rest') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'aSKNA_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+icc_hg_aSKNA_squeeze <- icc_hg_aSKNA %>%
+  filter(event == 'squeeze') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'aSKNA_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+# calculate ICCs: rest
+icc_hg_aSKNA_rest_estimate <- irr::icc(icc_hg_aSKNA_rest,
+                                    type = "agreement",
+                                    model = "twoway",
+                                    unit = "average")
+
+icc_hg_aSKNA_squeeze_estimate <- irr::icc(icc_hg_aSKNA_squeeze,
+                                       type = "agreement",
+                                       model = "twoway",
+                                       unit = "average")
+
+# arrange tables containing ICC estimates and F-test results
+icc_hg_aSKNA_results <- as.data.frame(
+  cbind(c('Rest', 'Squeeze'),
+        rbind(extract_icc_results(icc_hg_aSKNA_rest_estimate),
+              extract_icc_results(icc_hg_aSKNA_squeeze_estimate))
+  ))
+names(icc_hg_aSKNA_results) <- c('Event', 'ICC', '95% CI', 'F (df1, df2)', 'p')
+
+
+# join all test-retest reliability tables ---------------------------------
+
+icc_hg_results <- as.data.frame(
+  cbind(c(rep('Mean pupil diameter',2),
+          rep('Mean heart rate', 2),
+          rep('Mean sympathetic tone', 2)),
+  rbind(icc_hg_pupil_results,
+        icc_hg_HR_results,
+        icc_hg_aSKNA_results)
+))
+names(icc_hg_results)[1] <- 'Measure'
+
+
+# analyze baseline differences in heart rate ------------------------------
+
+summary_agegr_baseline_aSKNA <- data_aSKNA_baseline %>%
+  
+  # average over hemispheres
+  group_by(label_subject) %>%
+  summarize(aSKNA_baseline = mean(mean_iSKNA, na.rm = TRUE)) %>%
+  
+  # bind subject info
+  left_join(data_subjects %>%
+              select(label_subject, age_group), 
+            by = 'label_subject')
+
+ttest_agegr_baseline_aSKNA <- t.test(aSKNA_baseline ~ age_group, data = summary_agegr_baseline_aSKNA)

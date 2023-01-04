@@ -193,9 +193,49 @@ figure5 <- ggarrange(
 )
 
 
-ggsave(here('figures', 'figure5_nback-arousal.png'), 
+ggsave(here('figures', 'figure6_nback-arousal.png'), 
        figure5,
        device = 'png', dpi = fig_dpi, bg = 'white',
        width = 7, height = 10)
 # previously width = 12, height = 5
 
+
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+icc_nb_aSKNA <- summary_nb_aSKNA %>%
+  group_by(label_subject, group, age_group, run) %>%
+  summarize(aSKNA_corr = mean(aSKNA_corr, na.rm = TRUE))
+icc_nb_aSKNA[icc_nb_aSKNA == 'NaN'] <- NA
+
+# reshape data for ICC calculation
+icc_nb_aSKNA <- icc_nb_aSKNA %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'aSKNA_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+# calculate ICCs
+icc_nb_aSKNA_estimate <- irr::icc(icc_nb_aSKNA,
+                               type = "agreement",
+                               model = "twoway",
+                               unit = "average")
+
+
+# arrange tables containing ICC estimates and F-test results
+icc_nb_aSKNA_results <- as.data.frame(
+  cbind(c('Mean sympathetic tone during n-back task blocks'),
+        rbind(extract_icc_results(icc_nb_aSKNA_estimate))
+  ))
+names(icc_nb_aSKNA_results) <- c('Measure', 'ICC', '95% CI', 'F (df1, df2)', 'p')  
+
+# join all n-back tonic arousal results
+icc_nb_tonic_results <- as.data.frame(
+  rbind(
+    icc_nb_pupil_fixation_results,
+    icc_nb_HR_results,
+    icc_nb_aSKNA_results
+  )
+)

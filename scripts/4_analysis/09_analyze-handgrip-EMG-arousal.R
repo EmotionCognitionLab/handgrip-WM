@@ -82,7 +82,7 @@ summary_hg_arousal$group <- factor(summary_hg_arousal$group, levels = c('Handgri
 fig_handgrip_EMG_pupil <- ggplot(data = summary_hg_arousal,
                                  aes(x = EMG_diff, y = pupil_diff)) +
   geom_point(aes(colour = group), alpha = 0.5) +
-  stat_cor(method = 'pearson', label.y = 1.5,
+  stat_cor(method = 'pearson', label.y = 2.1,
            cor.coef.name = 'r',
            r.accuracy = 0.001,
            p.digits = 2) +

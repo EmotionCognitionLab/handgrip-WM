@@ -171,3 +171,35 @@ contrasts.nb_HR <-
     )
   )
 
+
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+icc_nb_HR <- summary_nb_HR %>%
+  group_by(label_subject, group, age_group, run) %>%
+  summarize(niHR_corr = mean(niHR_corr, na.rm = TRUE))
+icc_nb_HR[icc_nb_HR == 'NaN'] <- NA
+
+# split data into rest and squeeze
+# and reshape for ICC calculation
+icc_nb_HR <- icc_nb_HR %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'niHR_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+# calculate ICCs
+icc_nb_HR_estimate <- irr::icc(icc_nb_HR,
+                               type = "agreement",
+                               model = "twoway",
+                               unit = "average")
+
+
+# arrange tables containing ICC estimates and F-test results
+icc_nb_HR_results <- as.data.frame(
+  cbind(c('Mean heart rate during n-back task blocks'),
+        rbind(extract_icc_results(icc_nb_HR_estimate))
+  ))
+names(icc_nb_HR_results) <- c('Measure', 'ICC', '95% CI', 'F (df1, df2)', 'p')  

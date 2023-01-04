@@ -289,3 +289,95 @@ contrasts.nb_acc <- as.data.frame(
 rm(contrasts.nb_acc_YA, contrasts.nb_acc_OA,
    condition_group_results_YA, condition_group_results_OA,
    input_wide, input, fit_mixed)
+
+
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+icc_nb_acc <- data_nback %>%
+  
+  # exclude practice trials, include target trials only
+  filter(!run == 0,
+         target == 1) %>%
+  rowwise() %>%
+  group_by(label_subject, condition, run) %>%
+  
+  # compute mean accuracy for each participant, by condition
+  summarize(n_targets = n(),
+            mean_acc = sum(response, na.rm = TRUE)/n_targets) %>%
+  
+  # bind subject information
+  left_join(data_subjects %>% 
+              select(label_subject, group, age_group),
+            by = 'label_subject') %>%
+  select(label_subject, group, age_group, condition, run, mean_acc) %>%
+  rowwise() %>%
+  mutate(condition = str_c(condition, '-back', sep = ''))
+icc_nb_acc[icc_nb_acc == 'NaN'] <- NA
+
+# split by WM load
+# and reshape data for ICC calculation
+icc_nb_acc_0 <- icc_nb_acc %>%
+  filter(condition == '0-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'mean_acc') %>%
+  ungroup() %>%
+  select(run1, run2, run3)
+
+icc_nb_acc_1 <- icc_nb_acc %>%
+  filter(condition == '1-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'mean_acc') %>%
+  ungroup() %>%
+  select(run1, run2, run3)
+
+icc_nb_acc_2 <- icc_nb_acc %>%
+  filter(condition == '2-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'mean_acc') %>%
+  ungroup() %>%
+  select(run1, run2, run3)
+
+icc_nb_acc_3 <- icc_nb_acc %>%
+  filter(condition == '3-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'mean_acc') %>%
+  ungroup() %>%
+  select(run1, run2, run3)
+
+# calculate ICCs: rest
+icc_nb_acc_0_estimate <- irr::icc(icc_nb_acc_0,
+                                  type = "agreement",
+                                  model = "twoway",
+                                  unit = "average")
+
+icc_nb_acc_1_estimate <- irr::icc(icc_nb_acc_1,
+                                  type = "agreement",
+                                  model = "twoway",
+                                  unit = "average")
+
+icc_nb_acc_2_estimate <- irr::icc(icc_nb_acc_2,
+                                  type = "agreement",
+                                  model = "twoway",
+                                  unit = "average")
+
+icc_nb_acc_3_estimate <- irr::icc(icc_nb_acc_3,
+                                  type = "agreement",
+                                  model = "twoway",
+                                  unit = "average")
+
+
+# arrange tables containing ICC estimates and F-test results
+icc_nb_acc_results <- as.data.frame(
+  cbind(c('0-back', '1-back', '2-back', '3-back'),
+        rbind(extract_icc_results(icc_nb_acc_0_estimate),
+              extract_icc_results(icc_nb_acc_1_estimate),
+              extract_icc_results(icc_nb_acc_2_estimate),
+              extract_icc_results(icc_nb_acc_3_estimate))
+  ))
+names(icc_nb_acc_results) <- c('Load', 'ICC', '95% CI', 'F (df1, df2)', 'p')
+

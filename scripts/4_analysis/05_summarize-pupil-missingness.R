@@ -11,7 +11,7 @@
 
 pupil_norm_baseline <- data_ET_baseline %>%
   # apply missingness threshold
-  mutate(pupil_mean = ifelse(frac_missing > thresh, NA, pupil_mean)) %>%
+  mutate(pupil_mean = ifelse(frac_missing > thresh_baseline, NA, pupil_mean)) %>%
   select(label_subject, hemi, pupil_baseline = pupil_mean)
 
 
@@ -20,7 +20,8 @@ pupil_norm_baseline <- data_ET_baseline %>%
 ET_missing_baseline <- data_ET_baseline %>%
   
   # apply event-wise missingness threshold
-  mutate(pupil_missing = ifelse(frac_missing > thresh, 1, 0)) %>%
+  #mutate(pupil_missing = ifelse(frac_missing > thresh, 1, 0)) %>%
+  mutate(pupil_missing = ifelse(frac_missing > thresh_baseline, 1, 0)) %>%
   
   # compute missingness by participant
   group_by(label_subject) %>%
@@ -43,7 +44,7 @@ ET_missing_baseline <- data_ET_baseline %>%
          n_segments_total = ifelse(n_segments_total == 2, n_segments_total,
                                    ifelse(!n_segments_total == 2, 2, NA)))
 
-# identify number of participants with no valid handgrip data
+# identify number of participants with no valid baseline data
 n_missing_ET_baseline <- ET_missing_baseline %>% filter(is.na(n_segments_total)) %>% nrow()
 
 # summarize missingness across participants, by event
@@ -82,7 +83,8 @@ ET_missing_handgrip <- data_ET_handgrip %>%
   filter(!event == 'initial_rest') %>%
   
   # apply event-wise missingness threshold
-  mutate(pupil_missing = ifelse(frac_missing > thresh, 1, 0)) %>%
+  #mutate(pupil_missing = ifelse(frac_missing > thresh, 1, 0)) %>%
+  mutate(pupil_missing = ifelse(frac_missing > thresh_handgrip, 1, 0)) %>%
   
   # merge event and round
   mutate(part = str_c(event, round, sep = '')) %>%
@@ -146,7 +148,8 @@ ET_missing_nbfix <- data_ET_nback %>%
   filter(event == 'initial_fixation') %>%
   
   # apply segment-wise missingness threshold
-  mutate(pupil_missing = ifelse(frac_missing > thresh, 1, 0)) %>%
+  #mutate(pupil_missing = ifelse(frac_missing > thresh, 1, 0)) %>%
+  mutate(pupil_missing = ifelse(frac_missing > thresh_nbfix, 1, 0)) %>%
   
   # bind age group data
   left_join(data_subjects %>%
@@ -218,7 +221,8 @@ ET_missing_nbtrials <- data_ET_nback %>%
   filter(event == 'trial') %>%
   
   # apply segment-wise missingness threshold
-  mutate(pupil_missing = ifelse(frac_missing > thresh, 1, 0)) %>%
+  #mutate(pupil_missing = ifelse(frac_missing > thresh, 1, 0)) %>%
+  mutate(pupil_missing = ifelse(frac_missing > thresh_nbtrials, 1, 0)) %>%
   
   # join trial data (condition, accuracy, RT)
   left_join(data_nback %>%

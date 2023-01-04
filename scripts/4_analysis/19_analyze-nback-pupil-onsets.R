@@ -18,7 +18,8 @@ summary_nb_pupil_trialmissing <- data_ET_nback %>%
   
   # exclude segments with missingness above threshold
   rowwise() %>%
-  mutate(exclude_trial = ifelse(frac_missing > thresh, 1, 0)) %>%
+#  mutate(exclude_trial = ifelse(frac_missing > thresh, 1, 0)) %>%
+  mutate(exclude_trial = ifelse(frac_missing > thresh_nbtrials, 1, 0)) %>%
   select(-frac_missing)
 
 
@@ -266,3 +267,90 @@ contrasts.nb_pupil_onset <-
     )
   )
 
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+# (averaging first over rounds, to get single squeeze/rest estimate per run)
+icc_nb_pupil_onset <- summary_nb_pupil_onset %>%
+  group_by(label_subject, group, age_group, run, condition) %>%
+  summarize(pupil_corr_onset = mean(pupil_corr_onset, na.rm = TRUE))
+icc_nb_pupil_onset[icc_nb_pupil_onset == 'NaN'] <- NA
+
+# split data into rest and squeeze
+# and reshape for ICC calculation
+icc_nb_pupil_onset_0back <- icc_nb_pupil_onset %>%
+  filter(condition == '0-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr_onset') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+icc_nb_pupil_onset_1back <- icc_nb_pupil_onset %>%
+  filter(condition == '1-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr_onset') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+icc_nb_pupil_onset_2back <- icc_nb_pupil_onset %>%
+  filter(condition == '2-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr_onset') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+icc_nb_pupil_onset_3back <- icc_nb_pupil_onset %>%
+  filter(condition == '3-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr_onset') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+# calculate ICCs: rest
+icc_nb_pupil_onset_0back_estimate <- irr::icc(icc_nb_pupil_onset_0back,
+                                        type = "agreement",
+                                        model = "twoway",
+                                        unit = "average")
+
+icc_nb_pupil_onset_1back_estimate <- irr::icc(icc_nb_pupil_onset_1back,
+                                              type = "agreement",
+                                              model = "twoway",
+                                              unit = "average")
+
+icc_nb_pupil_onset_2back_estimate <- irr::icc(icc_nb_pupil_onset_2back,
+                                              type = "agreement",
+                                              model = "twoway",
+                                              unit = "average")
+
+icc_nb_pupil_onset_3back_estimate <- irr::icc(icc_nb_pupil_onset_3back,
+                                              type = "agreement",
+                                              model = "twoway",
+                                              unit = "average")
+
+# arrange tables containing ICC estimates and F-test results
+icc_nb_pupil_onset_results <- as.data.frame(
+  cbind(c('0-back', '1-back', '2-back', '3-back'),
+        rbind(extract_icc_results(icc_nb_pupil_onset_0back_estimate),
+              extract_icc_results(icc_nb_pupil_onset_1back_estimate),
+              extract_icc_results(icc_nb_pupil_onset_2back_estimate),
+              extract_icc_results(icc_nb_pupil_onset_3back_estimate))
+  ))
+names(icc_nb_pupil_onset_results) <- c('Load', 'ICC', '95% CI', 'F (df1, df2)', 'p')
+
+# join all ICC results for phasic pupillary responses
+icc_nb_pupil_results <- as.data.frame(
+  cbind(c(rep('Maximum pupil diameter',4),
+          rep('Onset time of maximum pupil diameter', 4)),
+  rbind(icc_nb_pupil_results,
+        icc_nb_pupil_onset_results)
+  )
+)
+names(icc_nb_pupil_results)[1] <- 'Measure'

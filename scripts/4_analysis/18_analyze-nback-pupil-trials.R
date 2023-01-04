@@ -15,7 +15,8 @@ pupil_norm_nbfix <- data_ET_nback %>%
   filter(event == 'initial_fixation') %>%
   
   # apply missingness threshold to individual segments
-  mutate(pupil_mean = ifelse(frac_missing > thresh, NA, pupil_mean)) %>%
+#  mutate(pupil_mean = ifelse(frac_missing > thresh, NA, pupil_mean)) %>%
+  mutate(pupil_mean = ifelse(frac_missing > thresh_nbtrials, NA, pupil_mean)) %>%
   
   # relabel pupil_mean column and remove irrelevant columns
   rename(pupil_nbfix = pupil_mean) %>%
@@ -33,7 +34,8 @@ summary_nb_pupil_trials <- data_ET_nback %>%
   filter(event == 'trial') %>%
   
   # apply missingness threshold to individual segments
-  mutate(pupil_mean = ifelse(frac_missing > thresh, NA, pupil_mean)) %>%
+#  mutate(pupil_mean = ifelse(frac_missing > thresh, NA, pupil_mean)) %>%
+  mutate(pupil_mean = ifelse(frac_missing > thresh_nbtrials, NA, pupil_mean)) %>%
   
   # relabel pupil_max column and remove irrelevant columns
   rename(pupil_trial = pupil_max) %>%
@@ -246,5 +248,82 @@ contrasts.nb_pupil_trials <-
   )
 
 
+# analyze test-retest reliability across runs -----------------------------
+
+# organize data for ICC calculations
+# (averaging first over rounds, to get single squeeze/rest estimate per run)
+icc_nb_pupil <- summary_nb_pupil_trials %>%
+  group_by(label_subject, group, age_group, run, condition) %>%
+  summarize(pupil_corr = mean(pupil_corr, na.rm = TRUE))
+icc_nb_pupil[icc_nb_pupil == 'NaN'] <- NA
+
+# split data into rest and squeeze
+# and reshape for ICC calculation
+icc_nb_pupil_0back <- icc_nb_pupil %>%
+  filter(condition == '0-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+icc_nb_pupil_1back <- icc_nb_pupil %>%
+  filter(condition == '1-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+icc_nb_pupil_2back <- icc_nb_pupil %>%
+  filter(condition == '2-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+icc_nb_pupil_3back <- icc_nb_pupil %>%
+  filter(condition == '3-back') %>%
+  pivot_wider(names_from = 'run', 
+              names_prefix = 'run', 
+              values_from = 'pupil_corr') %>%
+  ungroup() %>%
+  select(run1, run2, run3) %>%
+  filter(!is.na(run1) & !is.na(run2) & !is.na(run3))
+
+# calculate ICCs: rest
+icc_nb_pupil_0back_estimate <- irr::icc(icc_nb_pupil_0back,
+                                       type = "agreement",
+                                       model = "twoway",
+                                       unit = "average")
+
+icc_nb_pupil_1back_estimate <- irr::icc(icc_nb_pupil_1back,
+                                          type = "agreement",
+                                          model = "twoway",
+                                          unit = "average")
+
+icc_nb_pupil_2back_estimate <- irr::icc(icc_nb_pupil_2back,
+                                        type = "agreement",
+                                        model = "twoway",
+                                        unit = "average")
+
+icc_nb_pupil_3back_estimate <- irr::icc(icc_nb_pupil_3back,
+                                        type = "agreement",
+                                        model = "twoway",
+                                        unit = "average")
+
+# arrange tables containing ICC estimates and F-test results
+icc_nb_pupil_results <- as.data.frame(
+  cbind(c('0-back', '1-back', '2-back', '3-back'),
+        rbind(extract_icc_results(icc_nb_pupil_0back_estimate),
+              extract_icc_results(icc_nb_pupil_1back_estimate),
+              extract_icc_results(icc_nb_pupil_2back_estimate),
+              extract_icc_results(icc_nb_pupil_3back_estimate))
+  ))
+names(icc_nb_pupil_results) <- c('Load', 'ICC', '95% CI', 'F (df1, df2)', 'p')
 
 
